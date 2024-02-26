@@ -17,8 +17,12 @@
     "@remix-run/react": "^2.7.2",
     "@remix-run/serve": "^2.7.2",
     "isbot": "^4.1.0",
+    "openai": "^4.28.0",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^4.0.379",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "text-from-pdf": "^1.1.2",
     "zod": "^3.22.4"
   },
   "devDependencies": {
