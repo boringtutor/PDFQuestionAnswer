@@ -1,6 +1,11 @@
 "use client";
+import { DropZoneArea } from "@/components/DropZone";
+import { writeToFile } from "@/utils/writeFile";
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
+import { pdfjs } from "react-pdf";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 const initialState = {
   blobfile: "",
@@ -30,21 +35,67 @@ function createInitialState(
   };
 }
 
-function uploadFile(initlaState: fileType, formData: FormData) {
-  const data = formData.get("file-upload");
+async function getArrayData(data: FormDataEntryValue) {
+  const pdfData = await data?.arrayBuffer();
+  const blob = Buffer.from(pdfData);
+  return blob;
+}
+
+async function extractTextFromPDF(pdfData: ArrayBuffer) {
+  const loadingTask = pdfjs.getDocument({ data: pdfData });
+  const pdf = await loadingTask.promise;
+  let extractedText = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    textContent.items.forEach((textItem) => {
+      extractedText += textItem.str + "\n";
+    });
+  }
+  return extractedText;
+}
+
+// async function extractTextFromPDF(pdfData: ArrayBuffer) {
+//   const loadingTask = p.getDocument({ data: pdfData });
+//   const pdf = await loadingTask.promise;
+//   const numPages = pdf.numPages;
+//   let text = "";
+
+//   for (let i = 1; i <= numPages; i++) {
+//     const page = await pdf.getPage(i);
+//     const content = await page.getTextContent();
+//     const pageText = content.items.map((item) => item.str).join(" ");
+//     text += pageText + "\n"; // Add a newline between pages
+//   }
+
+//   return text;
+// }
+
+async function uploadFile(initlaState: fileType, formData: FormData) {
+  const data = await formData.get("file-upload");
   console.log("upload data", data);
+  const honeypot = await formData.get("honey-pot");
+  if (honeypot) {
+    return {
+      altText: "failed",
+      contentType: "failed",
+      blob: "failed",
+    };
+  }
+  const pdfData = await data?.arrayBuffer();
+  const extractedText = await extractTextFromPDF(pdfData);
 
   return {
-    altText: "testing the altText",
+    altText: "sending from data from server",
     contentType: "application/pdf",
-    blob: "blob",
+    blob: extractedText,
   };
 }
 
 export default function Home() {
-  const [state, formAction] = useFormState(createInitialState, initialState);
+  // const [state, formAction] = useFormState(createInitialState, initialState);
   const [upload, uploadAction] = useFormState(uploadFile, uploadState);
-  const [display, setDisplay] = useState<string>("");
+  // const [display, setDisplay] = useState<string>("");
   const [PreviewFile, setPreviewFile] = useState<string | null>(null);
 
   const { pending } = useFormStatus();
@@ -64,63 +115,61 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24 ">
-      <form action={formAction}>
-        <label htmlFor={name}>Enter Task</label>
-        <input
-          type="text"
-          id={name}
-          name={name}
-          required
-          className="text-black"
-          value={display}
-          onChange={(e) => {
-            setDisplay(e.target.value);
-          }}
-        />
-        <button type="submit" aria-disabled={pending}>
-          Add
-        </button>
-        <p aria-live="polite" className="sr-only" role="status">
-          {state?.blobfile}
-        </p>
-      </form>
-
       <form action={uploadAction}>
-        <label htmlFor="file-upload">Upload File</label>
-        <input
-          type="file"
-          id="file-upload"
-          name="file-upload"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            console.log("File:", file);
-            if (file) {
-              const reader = new FileReader();
-              console.log("Reader:", reader);
-              reader.onload = (e) => {
-                const res = e.target?.result as string;
-                console.log("result is  : ", reader.result);
-                // console.log("Result:", res);
-                setPreviewFile(res);
-              };
-              reader.readAsDataURL(file);
-            } else {
-              setPreviewFile(null);
-            }
-          }}
-        />
-        <button
-          type="submit"
-          aria-disabled={pending}
-          onClick={() => {
-            setPreviewFile(null);
-          }}
-        >
-          upload
-        </button>
-        <p aria-live="polite" className="sr-only" role="status">
-          {upload?.altText}
-        </p>
+        <div className="flex flex-col">
+          {/* <label
+            htmlFor="file-upload "
+            className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+          >
+            Upload File
+          </label>
+
+          <input
+            type="file"
+            id="file-upload"
+            name="file-upload"
+            className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              // console.log("File:", file);
+              if (file) {
+                const reader = new FileReader();
+                // console.log("Reader:", reader);
+                reader.onload = (e) => {
+                  const res = e.target?.result as string;
+                  // console.log("result is  : ", reader.result);
+                  // console.log("Result:", res);
+                  setPreviewFile(res);
+                };
+                reader.readAsDataURL(file);
+              } else {
+                setPreviewFile(null);
+              }
+            }}
+         /> */}
+
+          <DropZoneArea setPreviewFile={setPreviewFile} />
+
+          <div className="flex ">
+            <input
+              id="honey-pot"
+              name="honey-pot"
+              className=""
+              hidden
+              aria-hidden
+            />
+            <button
+              className="bg-blue-500 text-white px-4 py-2 rounded-md"
+              type="submit"
+              aria-disabled={pending}
+              onClick={() => {
+                setPreviewFile(null);
+              }}
+            >
+              upload
+            </button>
+          </div>
+        </div>
       </form>
       {PreviewFile && (
         <div className="flex w-[80%] h-[500px] mx-10 justify-center items-center bg-slate-400 ">
@@ -132,6 +181,12 @@ export default function Home() {
           />
         </div>
       )}
+
+      <div className="flex flex-col">
+        <div className="flex">{upload?.altText}</div>
+        <div>{upload?.contentType}</div>
+        <div>{upload?.blob}</div>
+      </div>
     </main>
   );
 }
