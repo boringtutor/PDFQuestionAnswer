@@ -1,6 +1,7 @@
 "use client";
 import { DropZoneArea } from "@/components/DropZone";
 import { writeToFile } from "@/utils/writeFile";
+import axios from "axios";
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { pdfjs } from "react-pdf";
@@ -47,12 +48,40 @@ async function extractTextFromPDF(pdfData: ArrayBuffer) {
   let extractedText = "";
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
+    let pageData = "";
     const textContent = await page.getTextContent();
     textContent.items.forEach((textItem) => {
+      pageData += textItem.str;
       extractedText += textItem.str + "\n";
     });
+
+    console.log("Page Data:", pageData);
+    //TODO: send the page data to the server so we can work page by page on the data.
+    //TODO: we have to implement the server where we send the data and then
+
+    //TODO: get the answer back and then figure out how to display the answer using useEffect or something.
   }
-  return extractedText;
+
+  // const cofig = {
+  //   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  //   data: {
+  //     extractedText,
+  //   },
+  //   withCredentials: true,
+  // };
+
+  axios
+    .post("http://localhost:3000/questionanswer", {
+      data: {
+        extractedText: extractedText,
+      },
+    })
+    .then((res) => {
+      console.log("Response:", res);
+    })
+    .catch((err) => {
+      console.log("Error:", err);
+    });
 }
 
 // async function extractTextFromPDF(pdfData: ArrayBuffer) {
@@ -187,6 +216,29 @@ export default function Home() {
         <div>{upload?.contentType}</div>
         <div>{upload?.blob}</div>
       </div>
+
+      {/*TODO: Testing the axios service */}
+      <button
+        className="bg-blue-500 text-white m-10 px-4 py-2 rounded-md"
+        onClick={() => {
+          console.log("clickeing");
+          axios
+            .post("http://localhost:3000/questionanswer", {
+              data: {
+                extractedText:
+                  "This is the text that is being sent to the server",
+              },
+            })
+            .then((res) => {
+              console.log("Response:", res);
+            })
+            .catch((err) => {
+              console.log("Error:", err);
+            });
+        }}
+      >
+        Testing Axios
+      </button>
     </main>
   );
 }

@@ -1,11 +1,14 @@
-import { prisma } from "#app/utils/db.server.ts";
+import { prisma } from "../utils/db.server.ts";
 // import { openAI } from "#app/utils/openai.server.ts";
 import { LoaderFunctionArgs, MetaFunction, json } from "@remix-run/node";
 // import { FileUpload } from "../components/file-upload";
-import { Form, redirect, useLoaderData } from "@remix-run/react";
+import { redirect, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 // import { z } from "zod";
 import * as pdfjsLib from "pdfjs-dist";
+import fs from "../utils/fs-extra.server.ts";
+// import { writeToFile } from "../utils/bucket.server.ts";
+// import { testFunction } from "../utils/misc.tsx";
 
 // const MAX_UPLOAD_SIZE = 1024 * 1024 * 10; // 10MB
 
@@ -76,16 +79,8 @@ export async function action({ request }: LoaderFunctionArgs) {
   //   .join("");
   // console.log("firstTenBytes is  : ", firstTenBytes);
 
-  extractTextFromPDF(pdfData)
-    .then((text) => {
-      //NOTE: This is where you get the extracted text
-      //TODO: we can send this data to the text to speach api
-      console.log("Extracted text:", text);
-      // Do something with the extracted text
-    })
-    .catch((error) => {
-      console.error("Error extracting text:", error);
-    });
+  const result = await extractTextFromPDF(pdfData);
+  console.log("result is  : ", result);
 
   //database connection
   // await prisma.file.create({
@@ -107,6 +102,14 @@ async function openTest() {
   // console.log(openai);
 }
 
+function test() {
+  console.log("running test function");
+  fs.writeFile("./tests/bucket/text.txt", "testFunction is called", (err) => {
+    if (err) throw err;
+    console.log("The file has been saved!");
+  });
+}
+
 export default function Index() {
   const [PreviewFile, setPreviewFile] = useState<string | null>(null);
   const data = useLoaderData<typeof loader>();
@@ -114,7 +117,7 @@ export default function Index() {
 
   return (
     <div className="flex flex-col w-full h-full bg-red-200">
-      <div className="flex flex-1 flex-col h-screen w-full bg-emerald-200">
+      {/* <div className="flex flex-1 flex-col h-screen w-full bg-emerald-200">
         <Form method="post" encType="multipart/form-data" id="file_upload_form">
           <label htmlFor="avatar-input">Avatar</label>
           <input
@@ -200,6 +203,19 @@ export default function Index() {
           </li>
         ))}
       </ul>
+      <div>
+       
+      </div> */}
+      <button
+        className="bg-sky-400 w-32 h-32"
+        onClick={() => {
+          console.log("clicked the button");
+          // writeToFile("testing the write to file function");
+          test();
+        }}
+      >
+        Test Upload to file
+      </button>
     </div>
   );
 }

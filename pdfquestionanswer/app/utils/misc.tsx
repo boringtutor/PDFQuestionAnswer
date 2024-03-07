@@ -1,3 +1,5 @@
+import fs from "../utils/fs-extra.server.ts";
+
 /**
  * Provide a condition and if that condition is falsey, this throws a 400
  * Response with the given message.
@@ -24,4 +26,13 @@ export function invariantResponse(
       ...responseInit,
     });
   }
+}
+
+export function testFunction() {
+  console.log("testFunction is called");
+  const text = "testFunction is called";
+  fs.writeFile("./tests/bucket/text.txt", text, (err) => {
+    if (err) throw err;
+    console.log("The file has been saved!");
+  });
 }
